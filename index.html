@@ -1,0 +1,913 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SprinklerBook — Irrigation Service Season Book</title>
+<style>
+  :root{
+    --ink:#1c2b26; --muted:#5c6f68; --line:#d7e0db; --bg:#f4f7f5; --card:#fff;
+    --brand:#1f7a5c; --brand-d:#14573f; --accent:#2b6cb0; --warn:#b7791f; --warn-bg:#fdf3d8;
+    --bad:#b3261e; --bad-bg:#fdecea; --ok:#1f7a5c; --ok-bg:#e6f4ee;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;color:var(--ink);background:var(--bg)}
+  header{background:var(--brand-d);color:#fff;padding:12px 16px;display:flex;flex-wrap:wrap;align-items:center;gap:10px}
+  header h1{font-size:20px;margin:0;font-weight:700}
+  header .sub{font-size:12px;opacity:.85}
+  header .money{margin-left:auto;font-size:13px;background:rgba(255,255,255,.12);padding:6px 10px;border-radius:8px}
+  nav{display:flex;gap:4px;background:#e9efec;padding:6px 10px;flex-wrap:wrap;border-bottom:1px solid var(--line)}
+  nav button{border:1px solid var(--line);background:#fff;padding:8px 14px;border-radius:20px;cursor:pointer;font-size:14px}
+  nav button.active{background:var(--brand);color:#fff;border-color:var(--brand)}
+  main{max-width:1060px;margin:0 auto;padding:16px}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px 16px;margin-bottom:14px}
+  .card h2{margin:0 0 8px;font-size:17px}
+  .card h3{margin:10px 0 6px;font-size:15px}
+  .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px}
+  .stat{font-size:26px;font-weight:700}
+  .stat small{font-size:12px;color:var(--muted);font-weight:400;display:block}
+  table{width:100%;border-collapse:collapse;font-size:14px}
+  th,td{padding:7px 8px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}
+  th{color:var(--muted);font-weight:600;font-size:12px;text-transform:uppercase;letter-spacing:.03em}
+  tr:hover td{background:#fbfdfc}
+  .btn{display:inline-block;border:1px solid var(--brand);background:var(--brand);color:#fff;padding:8px 14px;border-radius:8px;cursor:pointer;font-size:14px;text-decoration:none}
+  .btn.ghost{background:#fff;color:var(--brand)}
+  .btn.small{padding:4px 9px;font-size:13px;border-radius:6px;min-height:40px;}
+  .btn.danger{background:#fff;color:var(--bad);border-color:var(--bad)}
+  label{display:block;font-size:13px;color:var(--muted);margin:10px 0 4px}
+  input,select,textarea{width:100%;padding:9px;border:1px solid var(--line);border-radius:8px;font-size:15px;background:#fff;color:var(--ink)}
+  textarea{min-height:64px}
+  .row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  .row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}
+  @media(max-width:640px){.row,.row3{grid-template-columns:1fr}}
+  .pill{display:inline-block;padding:2px 9px;border-radius:20px;font-size:12px;font-weight:600}
+  .pill.ok{background:var(--ok-bg);color:var(--ok)}
+  .pill.warn{background:var(--warn-bg);color:var(--warn)}
+  .pill.bad{background:var(--bad-bg);color:var(--bad)}
+  .pill.grey{background:#eef1ef;color:var(--muted)}
+  .pill.blue{background:#e3edf8;color:var(--accent)}
+  .pill.demo{background:#fef3c7;color:#92400e;border:1px solid #f59e0b}
+  .tblwrap,.tablewrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
+  .tblwrap table,.tablewrap table{min-width:560px}
+  .banner{background:var(--warn-bg);border:1px solid #ecd28a;border-radius:10px;padding:10px 12px;margin-bottom:12px;font-size:14px}
+  .muted{color:var(--muted)} .small{font-size:13px}
+  .right{text-align:right} .center{text-align:center}
+  .flex{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+  .spacer{flex:1}
+  .alert{background:var(--warn-bg);border:1px solid #ecd28a;border-radius:10px;padding:10px 12px;margin-bottom:12px;font-size:14px}
+  .alert.bad{background:var(--bad-bg);border-color:#e5a49e}
+  .hidden{display:none}
+  .zonecounts{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+  @media(max-width:640px){.zonecounts{grid-template-columns:repeat(2,1fr)}}
+  .partrow{display:grid;grid-template-columns:2fr 1fr auto;gap:8px;margin-bottom:6px}
+  dialog{border:1px solid var(--line);border-radius:14px;max-width:640px;width:94vw;padding:0}
+  dialog .inner{padding:18px}
+  dialog::backdrop{background:rgba(20,40,32,.4)}
+  .kbd{background:#eef1ef;border:1px solid var(--line);border-radius:4px;padding:0 5px;font-size:12px}
+  #printArea{display:none}
+  @media print{
+    body>*{display:none!important}
+    #printArea{display:block!important;font-size:13px;color:#000}
+    #printArea h1{font-size:19px;margin:0 0 2px}
+    #printArea h2{font-size:15px;margin:14px 0 4px}
+    #printArea table{font-size:12.5px}
+    #printArea th,#printArea td{border-bottom:1px solid #999;padding:5px 6px}
+    .sig{margin-top:26px;border-top:1px solid #000;padding-top:4px;width:60%;font-size:12px}
+  }
+</style>
+</head>
+<body>
+<header>
+  <div>
+    <h1>💧 SprinklerBook</h1>
+    <div class="sub" id="hdrBiz">Irrigation Service Season Book</div>
+  </div>
+  <div class="money" id="hdrMoney"></div>
+</header>
+<nav id="tabs">
+  <button data-tab="dashboard" class="active">Dashboard</button>
+  <button data-tab="properties">Properties</button>
+  <button data-tab="jobs">Service Log</button>
+  <button data-tab="duelists">Season Lists</button>
+  <button data-tab="settings">Settings</button>
+  <button data-tab="help">Help</button>
+</nav>
+<main>
+  <section id="view-dashboard"></section>
+  <section id="view-properties" class="hidden"></section>
+  <section id="view-propertydetail" class="hidden"></section>
+  <section id="view-jobs" class="hidden"></section>
+  <section id="view-duelists" class="hidden"></section>
+  <section id="view-settings" class="hidden"></section>
+  <section id="view-help" class="hidden"></section>
+</main>
+
+<dialog id="propDlg"><div class="inner" id="propDlgBody"></div></dialog>
+<dialog id="jobDlg"><div class="inner" id="jobDlgBody"></div></dialog>
+<div id="printArea"></div>
+
+<script>
+"use strict";
+/* ============================== helpers ============================== */
+const LS_KEY = "sprinklerbook_v1";
+const $ = id => document.getElementById(id);
+function uid(){ return "id" + Date.now().toString(36) + Math.random().toString(36).slice(2,8); }
+function esc(s){ return String(s==null?"":s).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c])); }
+function money(n){ const v = Math.round((Number(n)||0)*100)/100; return (v<0?"-$":"$") + Math.abs(v).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g,","); }
+function num(v, d){ const n = parseFloat(v); return isFinite(n) ? n : (d||0); }
+function clampNonNeg(n){ n = Number(n); return isFinite(n) && n>0 ? n : 0; }
+function todayStr(){ const d=new Date(); return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0"); }
+function validDateStr(s){ if(typeof s!=="string" || !/^\d{4}-\d{2}-\d{2}$/.test(s)) return false; const p=s.split("-").map(Number); const d=new Date(p[0],p[1]-1,p[2]); return d.getFullYear()===p[0] && d.getMonth()===p[1]-1 && d.getDate()===p[2]; }
+function fmtDate(s){ if(!validDateStr(s)) return "—"; const p=s.split("-").map(Number); return ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"][p[1]-1]+" "+p[2]+", "+p[0]; }
+function daysBetween(a,b){ if(!validDateStr(a)||!validDateStr(b)) return null; const pa=a.split("-").map(Number), pb=b.split("-").map(Number); return Math.round((Date.UTC(pb[0],pb[1]-1,pb[2])-Date.UTC(pa[0],pa[1]-1,pa[2]))/86400000); }
+function addDays(s,n){ if(!validDateStr(s)) return ""; const p=s.split("-").map(Number); const d=new Date(Date.UTC(p[0],p[1]-1,p[2]+n)); return d.getUTCFullYear()+"-"+String(d.getUTCMonth()+1).padStart(2,"0")+"-"+String(d.getUTCDate()).padStart(2,"0"); }
+function yearOf(s){ return validDateStr(s) ? Number(s.slice(0,4)) : null; }
+
+/* ============================== defaults ============================== */
+function defaultSettings(){
+  return {
+    bizName: "My Irrigation Co.",
+    laborRate: 95,
+    backflowPrice: 85,
+    midseasonPrice: 89,
+    actTiers: [ {max:12,price:153}, {max:20,price:215}, {max:30,price:295}, {max:9999,price:383} ],
+    winTiers: [ {max:8,price:105}, {max:12,price:125}, {max:20,price:145}, {max:9999,price:165} ],
+    terms: "Seasonal services are billed on completion. Repairs billed at the shop labor rate plus parts. Backflow test results are filed with the water purveyor where required."
+  };
+}
+const ZONE_TYPES = ["spray","rotor","drip","mixed"];
+const JOB_TYPES = { activation:"Spring Activation", winterization:"Fall Winterization (Blowout)", repair:"Repair", midseason:"Mid-Season Check", backflow:"Backflow Test", install:"Install / Retrofit" };
+
+/* ============================== seed data ============================== */
+function dstr(y,m,d){ return y+"-"+String(m).padStart(2,"0")+"-"+String(d).padStart(2,"0"); }
+function seedState(){
+  const Y = new Date().getFullYear(), t = todayStr();
+  const st = { settings: defaultSettings(), properties: [], jobs: [] };
+  st.settings.bizName = "GreenLine Irrigation";
+  const zones = (spray,rotor,drip,mixed) => { const z=[]; for(let i=0;i<spray;i++)z.push("spray"); for(let i=0;i<rotor;i++)z.push("rotor"); for(let i=0;i<drip;i++)z.push("drip"); for(let i=0;i<mixed;i++)z.push("mixed"); return z; };
+  const mk = (name,address,phone,email,z,controller,bf,source,status,notes) => { const p={id:uid()+Math.random().toString(36).slice(2,5),demo:true,name,address,phone,email,zones:z,controller,backflow:bf,source,status,notes}; st.properties.push(p); return p; };
+  const done = d => d <= t ? "done" : "scheduled";
+  const job = (prop,type,date,price,extra) => { const j=Object.assign({id:uid()+Math.random().toString(36).slice(2,5),demo:true,propId:prop.id,type,date,status:done(date),price,amountPaid:0,laborHrs:0,parts:[],notes:""},extra||{}); if(j.status==="done") j.amountPaid = j.price; st.jobs.push(j); return j; };
+
+  const p1 = mk("Henderson, Mark & Lisa","1412 Sycamore Ln","555-0142","henderson@example.com", zones(8,4,0,0), "Rain Bird ESP-MC3, 12-station", {type:"Febco 765 PVB", lastTest:dstr(Y,4,16), nextDue:dstr(Y+1,4,16)}, "City water", "active", "Gate code 4417. Dog in back yard — text before arrival.");
+  const p2 = mk("Alvarez, Rosa","88 Winding Creek Dr","555-0117","rosa.alvarez@example.com", zones(6,3,0,0), "Hunter Pro-C", {type:"Watts 007 RPZ", lastTest:dstr(Y-1,10,2), nextDue:dstr(Y,10,2)}, "City water", "active", "Steep side yard. Shutoff in garage.");
+  const p3 = mk("Whitfield Farms (office)","2700 County Rd 12","555-0190","office@whitfieldfarms.example", zones(0,18,6,0), "Hunter ICC2, 24-station", {type:"Febco 880 RPZ", lastTest:dstr(Y,3,30), nextDue:dstr(Y+1,3,30)}, "Well + city backup", "active", "Commercial lot. Call office before service.");
+  const p4 = mk("Nguyen, Dan","415 Birchwood Ct","555-0163","dan.nguyen@example.com", zones(2,0,4,0), "Rain Bird ESP-TM2", {type:"Watts LF007", lastTest:dstr(Y-1,11,10), nextDue:addDays(t,12)}, "City water", "active", "Mostly drip beds. Filter at valve box by patio.");
+  const p5 = mk("Carlson, Pete","19 Meadowbrook Ter","555-0129","pcarlson@example.com", zones(10,6,0,0), "Hunter X-Core", {type:"Febco 765 PVB", lastTest:dstr(Y-1,9,18), nextDue:addDays(t,-20)}, "City water", "active", "Backflow test OVERDUE — city letter received.");
+  const p6 = mk("Brooks, Alan","77 Lakeview Dr","555-0105","", zones(5,0,0,0), "Rain Bird SST", {type:"—", lastTest:"", nextDue:""}, "City water", "inactive", "Sold house spring " + Y + " — inactive, keeping history.");
+
+  job(p1,"activation",dstr(Y,4,15), 153);
+  job(p1,"repair",dstr(Y,6,9), null, {laborHrs:1.5, parts:[{desc:"Rain Bird 5004 rotor head ×2",cost:36.50},{desc:"1in swing joint",cost:8.25}], notes:"Two broken rotors by driveway, zone 7 & 9. Replaced, adjusted arcs."});
+  job(p1,"winterization",dstr(Y,10,15), 125);
+  job(p2,"activation",dstr(Y,4,22), 153);
+  job(p2,"winterization",dstr(Y-1,10,28), 125, {notes:"Last year's blowout."});
+  job(p2,"repair",dstr(Y,7,14), null, {laborHrs:1, parts:[{desc:"Hunter solenoid, zone 3",cost:21.00}], notes:"Zone 3 not firing — bad solenoid."});
+  job(p3,"winterization",dstr(Y,11,3), 165);
+  job(p3,"repair",dstr(Y,5,20), null, {laborHrs:2.5, parts:[{desc:"2in main line coupling + PVC",cost:44.75}], notes:"Main line leak at parking lot island."});
+  job(p4,"activation",dstr(Y,4,18), 153);
+  job(p4,"winterization",dstr(Y,10,21), 105);
+  job(p4,"backflow",dstr(Y-1,11,10), 85);
+  job(p5,"activation",dstr(Y,4,11), 215);
+  job(p5,"winterization",dstr(Y,10,18), 145);
+  job(p6,"winterization",dstr(Y-1,10,20), 105);
+  // fix the one repair whose price is computed
+  st.jobs.forEach(j => { if(j.price===null) j.price = repairTotal(st.settings, j); j.amountPaid = j.status==="done" ? j.price : 0; });
+  return st;
+}
+
+/* ============================== pricing & seasons ============================== */
+function tierPrice(tiers, zones){
+  const z = Math.max(0, Math.floor(Number(zones)||0));
+  const ts = (tiers||[]).slice().sort((a,b)=>a.max-b.max);
+  for(const t of ts){ if(z <= t.max) return t.price; }
+  return ts.length ? ts[ts.length-1].price : 0;
+}
+function zoneCount(p){ return (p.zones||[]).length; }
+function jobPrice(settings, job, prop){
+  if(job.type==="activation") return tierPrice(settings.actTiers, zoneCount(prop));
+  if(job.type==="winterization") return tierPrice(settings.winTiers, zoneCount(prop));
+  if(job.type==="backflow") return settings.backflowPrice;
+  if(job.type==="midseason") return settings.midseasonPrice;
+  if(job.type==="repair") return repairTotal(settings, job);
+  return num(job.price, 0); // install: manual
+}
+function repairTotal(settings, job){
+  const parts = (job.parts||[]).reduce((s,p)=> s + clampNonNeg(p.cost), 0);
+  return Math.round((clampNonNeg(job.laborHrs) * num(settings.laborRate,0) + parts) * 100) / 100;
+}
+function jobBalance(j){ return Math.round((num(j.price,0) - num(j.amountPaid,0))*100)/100; }
+function seasonWindow(type, year){
+  if(type==="activation") return [dstr(year,2,15), dstr(year,6,30)];
+  if(type==="winterization") return [dstr(year,8,15), dstr(year,12,31)];
+  return null;
+}
+function hasSeasonJob(state, propId, type, year){
+  const w = seasonWindow(type, year); if(!w) return false;
+  return state.jobs.some(j => j.propId===propId && j.type===type && j.date >= w[0] && j.date <= w[1]);
+}
+function dueList(state, type, year){
+  return state.properties.filter(p => p.status==="active" && !hasSeasonJob(state, p.id, type, year));
+}
+function backflowDue(state, asOf, withinDays){
+  const out = [];
+  (state.properties||[]).filter(p=>p.status==="active").forEach(p => {
+    const nd = p.backflow && p.backflow.nextDue;
+    if(!validDateStr(nd)){ out.push({prop:p, days:null}); return; }
+    const d = daysBetween(asOf, nd);
+    if(d <= (withinDays==null?30:withinDays)) out.push({prop:p, days:d});
+  });
+  out.sort((a,b)=> (a.days===null?-9999:a.days) - (b.days===null?-9999:b.days));
+  return out;
+}
+function moneySummary(state, year){
+  const jobs = state.jobs.filter(j => !year || yearOf(j.date)===year);
+  let billed=0, collected=0; const byType={};
+  jobs.forEach(j => { billed += num(j.price,0); collected += num(j.amountPaid,0); byType[j.type] = (byType[j.type]||0) + num(j.price,0); });
+  return { billed: Math.round(billed*100)/100, collected: Math.round(collected*100)/100, outstanding: Math.round((billed-collected)*100)/100, byType, count: jobs.length };
+}
+function propHistory(state, propId){ return state.jobs.filter(j=>j.propId===propId).slice().sort((a,b)=> a.date<b.date?1:-1); }
+function propById(state, id){ return state.properties.find(p=>p.id===id) || null; }
+function hasDemoData(state){ return (state.properties||[]).some(p=>p.demo) || (state.jobs||[]).some(j=>j.demo); }
+function demoPill(){ return ' <span class="pill demo">DEMO</span>'; }
+
+/* ============================== state io ============================== */
+let S = null;
+function save(){ try{ localStorage.setItem(LS_KEY, JSON.stringify(S)); }catch(e){} }
+function load(){
+  try{ const raw = localStorage.getItem(LS_KEY); if(raw){ S = sanitizeState(JSON.parse(raw)); if(S) return; } }catch(e){}
+  S = seedState(); save();
+}
+function sanitizeState(raw){
+  if(!raw || typeof raw!=="object") return null;
+  const d = defaultSettings();
+  const s = { settings: Object.assign({}, d), properties: [], jobs: [] };
+  if(raw.legal && typeof raw.legal==="object") s.legal = { termsVersion: String(raw.legal.termsVersion || ""), acceptedDate: String(raw.legal.acceptedDate || ""), disclaimerShown: !!raw.legal.disclaimerShown };
+  if(raw.settings && typeof raw.settings==="object"){
+    const r = raw.settings;
+    s.settings.bizName = String(r.bizName||d.bizName).slice(0,80);
+    s.settings.laborRate = clampNonNeg(r.laborRate);
+    s.settings.backflowPrice = clampNonNeg(r.backflowPrice);
+    s.settings.midseasonPrice = clampNonNeg(r.midseasonPrice);
+    s.settings.terms = String(r.terms||"").slice(0,600);
+    const tiers = v => { if(!Array.isArray(v)) return null; const out = v.map(t=>({max: Math.max(0, Math.floor(num(t&&t.max,0)))||9999, price: clampNonNeg(t&&t.price)})).filter(t=>t.price>0||t.max===9999); return out.length?out:null; };
+    s.settings.actTiers = tiers(r.actTiers) || d.actTiers;
+    s.settings.winTiers = tiers(r.winTiers) || d.winTiers;
+  }
+  if(Array.isArray(raw.properties)){
+    raw.properties.forEach(p => {
+      if(!p || typeof p!=="object" || !p.name) return;
+      const zones = Array.isArray(p.zones) ? p.zones.filter(z=>ZONE_TYPES.includes(z)).slice(0,200) : [];
+      const bf = p.backflow && typeof p.backflow==="object" ? p.backflow : {};
+      s.properties.push({
+        id: String(p.id||uid()), demo: !!p.demo, name: String(p.name).slice(0,100), address: String(p.address||"").slice(0,160),
+        phone: String(p.phone||"").slice(0,40), email: String(p.email||"").slice(0,100), zones,
+        controller: String(p.controller||"").slice(0,120),
+        backflow: { type: String(bf.type||"").slice(0,80), lastTest: validDateStr(bf.lastTest)?bf.lastTest:"", nextDue: validDateStr(bf.nextDue)?bf.nextDue:"" },
+        source: String(p.source||"").slice(0,80), status: p.status==="inactive"?"inactive":"active", notes: String(p.notes||"").slice(0,600)
+      });
+    });
+  }
+  const ids = new Set(s.properties.map(p=>p.id));
+  if(Array.isArray(raw.jobs)){
+    raw.jobs.forEach(j => {
+      if(!j || typeof j!=="object" || !ids.has(j.propId) || !JOB_TYPES[j.type] || !validDateStr(j.date)) return;
+      const parts = Array.isArray(j.parts) ? j.parts.filter(x=>x&&typeof x==="object").map(x=>({desc:String(x.desc||"").slice(0,120), cost: clampNonNeg(x.cost)})).slice(0,60) : [];
+      s.jobs.push({
+        id: String(j.id||uid()), demo: !!j.demo, propId: j.propId, type: j.type, date: j.date,
+        status: j.status==="scheduled"?"scheduled":"done",
+        price: clampNonNeg(j.price), amountPaid: Math.min(clampNonNeg(j.amountPaid), clampNonNeg(j.price)),
+        laborHrs: clampNonNeg(j.laborHrs), parts, notes: String(j.notes||"").slice(0,800)
+      });
+    });
+  }
+  return s;
+}
+/* ============================== UI ============================== */
+let curTab = "dashboard", curProp = null, seasonYear = new Date().getFullYear(), jobYearFilter = "all", jobTypeFilter = "all", propSearch = "";
+
+function switchTab(tab){
+  curTab = tab; curProp = null;
+  document.querySelectorAll("#tabs button").forEach(b => b.classList.toggle("active", b.dataset.tab===tab));
+  ["dashboard","properties","propertydetail","jobs","duelists","settings","help"].forEach(v => $("view-"+v).classList.toggle("hidden", v!==tab));
+  render();
+}
+function openProperty(id){ curProp = id; curTab = "propertydetail";
+  document.querySelectorAll("#tabs button").forEach(b => b.classList.toggle("active", b.dataset.tab==="properties"));
+  ["dashboard","properties","propertydetail","jobs","duelists","settings","help"].forEach(v => $("view-"+v).classList.toggle("hidden", v!=="propertydetail"));
+  render();
+}
+function render(){
+  $("hdrBiz").textContent = S.settings.bizName + " — Irrigation Service Season Book";
+  const yr = new Date().getFullYear(), ms = moneySummary(S, yr);
+  $("hdrMoney").textContent = yr + ": " + money(ms.collected) + " collected · " + money(ms.outstanding) + " owed";
+  if(curTab==="dashboard") renderDashboard();
+  else if(curTab==="properties") renderProperties();
+  else if(curTab==="propertydetail") renderPropertyDetail();
+  else if(curTab==="jobs") renderJobs();
+  else if(curTab==="duelists") renderDueLists();
+  else if(curTab==="settings") renderSettings();
+  else if(curTab==="help") renderHelp();
+}
+function statusPill(j){ return j.status==="scheduled" ? '<span class="pill blue">Scheduled</span>' : (jobBalance(j)>0.005 ? '<span class="pill warn">Done · balance '+money(jobBalance(j))+'</span>' : '<span class="pill ok">Done · paid</span>'); }
+function zoneSummary(p){ const c={spray:0,rotor:0,drip:0,mixed:0}; (p.zones||[]).forEach(z=>c[z]++); const parts=[]; if(c.spray)parts.push(c.spray+" spray"); if(c.rotor)parts.push(c.rotor+" rotor"); if(c.drip)parts.push(c.drip+" drip"); if(c.mixed)parts.push(c.mixed+" mixed"); return zoneCount(p)+" zones" + (parts.length? " ("+parts.join(", ")+")" : ""); }
+
+function renderDashboard(){
+  const Y = seasonYear, t = todayStr();
+  const demoBanner = hasDemoData(S) ? '<div class="banner"><b>Sample data:</b> you are looking at demo properties and jobs so you can see how SprinklerBook works. <button class="btn small" onclick="clearDemoOnly()">Clear sample data only</button></div>' : "";
+  const fall = dueList(S, "winterization", Y), spring = dueList(S, "activation", Y);
+  const bf = backflowDue(S, t, 45);
+  const ms = moneySummary(S, Y);
+  const upcoming = S.jobs.filter(j=>j.status==="scheduled").sort((a,b)=> a.date<b.date?-1:1).slice(0,8);
+  let h = demoBanner;
+  h += '<div class="grid">'
+    + '<div class="card"><div class="stat">'+S.properties.filter(p=>p.status==="active").length+'<small>active properties</small></div></div>'
+    + '<div class="card"><div class="stat">'+money(ms.billed)+'<small>billed in '+Y+' ('+ms.count+' jobs)</small></div></div>'
+    + '<div class="card"><div class="stat">'+money(ms.collected)+'<small>collected in '+Y+'</small></div></div>'
+    + '<div class="card"><div class="stat">'+money(ms.outstanding)+'<small>outstanding</small></div></div></div>';
+  if(bf.length && bf[0].days!==null && bf[0].days<0) h += '<div class="alert bad">⚠️ <b>'+esc(bf[0].prop.name)+'</b> backflow test is <b>'+Math.abs(bf[0].days)+' days overdue</b> (due '+fmtDate(bf[0].prop.backflow.nextDue)+').</div>';
+  h += '<div class="card"><h2>🍂 Fall blowouts not booked — '+Y+' ('+fall.length+')</h2>'
+    + (fall.length ? '<p class="small muted">These active properties have no winterization on the books for this fall. Work this list before first freeze.</p>' : '<p class="small">Every active property has a blowout booked. 🎉</p>')
+    + '<div class="flex"><button class="btn small" onclick="switchTab(\'duelists\')">Open season lists</button> <button class="btn small ghost" onclick="printRouteList(\'winterization\')">🖨 Print blowout route list</button></div></div>';
+  h += '<div class="card"><h2>🌱 Spring activations not booked — '+Y+' ('+spring.length+')</h2>'
+    + '<div class="flex"><button class="btn small" onclick="switchTab(\'duelists\')">Open season lists</button> <button class="btn small ghost" onclick="printRouteList(\'activation\')">🖨 Print activation route list</button></div></div>';
+  h += '<div class="card"><h2>📅 Upcoming scheduled work</h2>';
+  if(upcoming.length){ h += "<div class='tblwrap'><table><tr><th>Date</th><th>Property</th><th>Service</th><th class='right'>Price</th></tr>" + upcoming.map(j=>{ const p=propById(S,j.propId); return "<tr><td>"+fmtDate(j.date)+"</td><td>"+esc(p?p.name:"?")+((j.demo||(p&&p.demo))?demoPill():"")+"</td><td>"+esc(JOB_TYPES[j.type])+"</td><td class='right'>"+money(j.price)+"</td></tr>"; }).join("") + "</table></div>"; }
+  else h += '<p class="small muted">Nothing scheduled.</p>';
+  h += "</div>";
+  h += '<div class="card"><h2>💰 '+Y+' by service type</h2><div class="tblwrap"><table><tr><th>Service</th><th class="right">Billed</th></tr>'
+    + Object.keys(JOB_TYPES).filter(k=>ms.byType[k]).map(k=>"<tr><td>"+JOB_TYPES[k]+"</td><td class='right'>"+money(ms.byType[k])+"</td></tr>").join("") + "</table></div></div>";
+  $("view-dashboard").innerHTML = h;
+}
+
+function renderProperties(){
+  const q = propSearch.toLowerCase();
+  const list = S.properties.filter(p => !q || (p.name+" "+p.address).toLowerCase().includes(q));
+  let h = '<div class="card"><div class="flex"><h2 style="margin:0">Properties ('+S.properties.length+')</h2><span class="spacer"></span>'
+    + '<button class="btn" onclick="propForm()">+ Add property</button></div>'
+    + '<label>Search</label><input id="propSearch" type="text" placeholder="Name or address…" value="'+esc(propSearch)+'" oninput="propSearch=this.value;renderPropertiesKeep()">'
+    + "<div class='tblwrap'><table><tr><th>Property</th><th>System</th><th>Backflow next due</th><th>Status</th><th></th></tr>";
+  list.forEach(p => {
+    const nd = p.backflow.nextDue;
+    let bf = '<span class="muted">—</span>';
+    if(validDateStr(nd)){ const d = daysBetween(todayStr(), nd); bf = fmtDate(nd) + (p.status==="active" ? (d<0 ? ' <span class="pill bad">'+Math.abs(d)+'d overdue</span>' : d<=30 ? ' <span class="pill warn">in '+d+'d</span>' : "") : ""); }
+    h += "<tr><td><b>"+esc(p.name)+"</b>"+(p.demo?demoPill():"")+"<br><span class='small muted'>"+esc(p.address)+"</span></td><td class='small'>"+esc(zoneSummary(p))+"<br>"+esc(p.controller||"")+"</td><td class='small'>"+bf+"</td><td>"+(p.status==="active"?'<span class="pill ok">Active</span>':'<span class="pill grey">Inactive</span>')+"</td>"
+      + "<td class='right'><button class='btn small ghost' onclick=\"openProperty('"+p.id+"')\">Open</button></td></tr>";
+  });
+  h += "</table></div>" + (list.length?"":'<p class="muted">No properties match.</p>') + "</div>";
+  $("view-properties").innerHTML = h;
+}
+function renderPropertiesKeep(){ const v = $("view-properties"); const scroll = window.scrollY; renderProperties(); const inp = $("propSearch"); if(inp){ inp.focus(); inp.setSelectionRange(inp.value.length, inp.value.length); } window.scrollTo(0, scroll); }
+
+function renderPropertyDetail(){
+  const p = propById(S, curProp);
+  if(!p){ $("view-propertydetail").innerHTML = '<div class="card">Property not found. <button class="btn small" onclick="switchTab(\'properties\')">Back</button></div>'; return; }
+  const hist = propHistory(S, p.id);
+  const billed = hist.reduce((s,j)=>s+num(j.price,0),0), paid = hist.reduce((s,j)=>s+num(j.amountPaid,0),0);
+  let h = '<div class="card"><div class="flex"><h2 style="margin:0">'+esc(p.name)+'</h2> '+(p.demo?demoPill():"")+(p.status==="active"?'<span class="pill ok">Active</span>':'<span class="pill grey">Inactive</span>')
+    + '<span class="spacer"></span><button class="btn small ghost" onclick="switchTab(\'properties\')">← All properties</button>'
+    + '<button class="btn small" onclick="jobForm(null,\''+p.id+'\')">+ Log service</button>'
+    + '<button class="btn small ghost" onclick="propForm(\''+p.id+'\')">Edit</button>'
+    + '<button class="btn small ghost" onclick="printProperty(\''+p.id+'\')">🖨 Print record</button></div>'
+    + '<p class="small muted">'+esc(p.address)+(p.phone?" · "+esc(p.phone):"")+(p.email?" · "+esc(p.email):"")+"</p>"
+    + '<div class="grid">'
+    + '<div><h3>System</h3><p class="small">'+esc(zoneSummary(p))+'<br>Controller: '+esc(p.controller||"—")+'<br>Water source: '+esc(p.source||"—")+'</p></div>'
+    + '<div><h3>Backflow preventer</h3><p class="small">'+esc(p.backflow.type||"—")+'<br>Last test: '+fmtDate(p.backflow.lastTest)+'<br>Next due: <b>'+fmtDate(p.backflow.nextDue)+'</b></p></div>'
+    + '<div><h3>Lifetime</h3><p class="small">'+hist.length+' service visits<br>Billed: '+money(billed)+'<br>Collected: '+money(paid)+(billed-paid>0.005?'<br><b>Balance: '+money(billed-paid)+'</b>':"")+'</p></div>'
+    + "</div>" + (p.notes? '<p class="small">📝 '+esc(p.notes)+"</p>" : "") + "</div>";
+  h += '<div class="card"><h2>Service history</h2>';
+  if(hist.length){ h += "<div class='tblwrap'><table><tr><th>Date</th><th>Service</th><th>Notes</th><th class='right'>Price</th><th>Status</th><th></th></tr>"
+    + hist.map(j=>"<tr><td>"+fmtDate(j.date)+"</td><td>"+esc(JOB_TYPES[j.type])+(j.demo?demoPill():"")+(j.type==="repair"&&j.laborHrs?"<br><span class='small muted'>"+j.laborHrs+" hrs labor"+(j.parts.length?", "+j.parts.length+" part(s)":"")+"</span>":"")+"</td><td class='small'>"+esc(j.notes)+"</td><td class='right'>"+money(j.price)+"</td><td>"+statusPill(j)+"</td>"
+      + "<td class='right'><button class='btn small ghost' onclick=\"jobForm('"+j.id+"')\">Edit</button> <button class='btn small ghost' onclick=\"printJobSheet('"+j.id+"')\">🖨</button></td></tr>").join("") + "</table></div>"; }
+  else h += '<p class="muted small">No service history yet — log the first visit.</p>';
+  h += "</div>";
+  $("view-propertydetail").innerHTML = h;
+}
+
+function renderJobs(){
+  const years = [...new Set(S.jobs.map(j=>yearOf(j.date)))].sort((a,b)=>b-a);
+  let list = S.jobs.slice().sort((a,b)=> a.date<b.date?1:-1);
+  if(jobYearFilter!=="all") list = list.filter(j=>String(yearOf(j.date))===jobYearFilter);
+  if(jobTypeFilter!=="all") list = list.filter(j=>j.type===jobTypeFilter);
+  const tot = list.reduce((s,j)=>s+num(j.price,0),0);
+  let h = '<div class="card"><div class="flex"><h2 style="margin:0">Service log ('+list.length+')</h2><span class="spacer"></span><button class="btn" onclick="jobForm()">+ Log service</button></div>'
+    + '<div class="row"><div><label>Year</label><select onchange="jobYearFilter=this.value;render()"><option value="all">All years</option>'+years.map(y=>'<option value="'+y+'"'+(jobYearFilter===String(y)?" selected":"")+">"+y+"</option>").join("")+"</select></div>"
+    + '<div><label>Service type</label><select onchange="jobTypeFilter=this.value;render()"><option value="all">All types</option>'+Object.keys(JOB_TYPES).map(k=>'<option value="'+k+'"'+(jobTypeFilter===k?" selected":"")+">"+JOB_TYPES[k]+"</option>").join("")+"</select></div></div>"
+    + '<p class="small muted">Total for this view: <b>'+money(tot)+'</b></p>';
+  if(list.length){ h += "<div class='tblwrap'><table><tr><th>Date</th><th>Property</th><th>Service</th><th class='right'>Price</th><th>Status</th><th></th></tr>"
+    + list.map(j=>{ const p=propById(S,j.propId); return "<tr><td>"+fmtDate(j.date)+"</td><td>"+esc(p?p.name:"(deleted)")+((j.demo||(p&&p.demo))?demoPill():"")+"</td><td>"+esc(JOB_TYPES[j.type])+"</td><td class='right'>"+money(j.price)+"</td><td>"+statusPill(j)+"</td><td class='right'><button class='btn small ghost' onclick=\"jobForm('"+j.id+"')\">Edit</button></td></tr>"; }).join("") + "</table></div>"; }
+  else h += '<p class="muted">No jobs match.</p>';
+  h += "</div>";
+  $("view-jobs").innerHTML = h;
+}
+
+function renderDueLists(){
+  const Y = seasonYear, t = todayStr();
+  const fall = dueList(S, "winterization", Y), spring = dueList(S, "activation", Y), bf = backflowDue(S, t, 30);
+  const dueTable = (list, type) => list.length
+    ? "<div class='tblwrap'><table><tr><th>Property</th><th>System</th><th class='right'>Price</th><th></th></tr>" + list.map(p=>"<tr><td><b>"+esc(p.name)+"</b>"+(p.demo?demoPill():"")+"<br><span class='small muted'>"+esc(p.address)+(p.phone?" · "+esc(p.phone):"")+"</span></td><td class='small'>"+esc(zoneSummary(p))+"</td><td class='right'>"+money(jobPrice(S.settings,{type},p))+"</td><td class='right'><button class='btn small' onclick=\"bookSeasonJob('"+p.id+"','"+type+"')\">Book it</button></td></tr>").join("") + "</table></div>"
+    : '<p class="small">All booked. 🎉</p>';
+  let h = '<div class="card"><div class="flex"><h2 style="margin:0">Season lists</h2><span class="spacer"></span><label style="margin:0">Season year <select style="width:auto;display:inline-block" onchange="seasonYear=parseInt(this.value);render()">'
+    + [Y-1,Y,Y+1].map(y=>'<option value="'+y+'"'+(y===Y?" selected":"")+">"+y+"</option>").join("") + "</select></label></div>"
+    + '<p class="small muted">A property leaves a list the moment any '+esc("activation (Feb 15–Jun 30)")+' or '+esc("winterization (Aug 15–Dec 31)")+' is on its record for that year — scheduled counts as booked.</p></div>';
+  h += '<div class="card"><h2>🍂 Fall blowout list — '+Y+' ('+fall.length+' not booked · '+money(fall.reduce((s,p)=>s+jobPrice(S.settings,{type:"winterization"},p),0))+' on the table)</h2>' + dueTable(fall,"winterization")
+    + '<div class="flex" style="margin-top:8px"><button class="btn small ghost" onclick="printRouteList(\'winterization\')">🖨 Print route list</button></div></div>';
+  h += '<div class="card"><h2>🌱 Spring activation list — '+Y+' ('+spring.length+' not booked · '+money(spring.reduce((s,p)=>s+jobPrice(S.settings,{type:"activation"},p),0))+' on the table)</h2>' + dueTable(spring,"activation")
+    + '<div class="flex" style="margin-top:8px"><button class="btn small ghost" onclick="printRouteList(\'activation\')">🖨 Print route list</button></div></div>';
+  h += '<div class="card"><h2>🚰 Backflow tests due (next 30 days + overdue)</h2>';
+  if(bf.length){ h += "<div class='tblwrap'><table><tr><th>Property</th><th>Device</th><th>Due</th><th></th></tr>" + bf.map(x=>"<tr><td><b>"+esc(x.prop.name)+"</b>"+(x.prop.demo?demoPill():"")+"</td><td class='small'>"+esc(x.prop.backflow.type||"—")+"</td><td>"+(x.days===null?'<span class="pill warn">No date on file</span>': fmtDate(x.prop.backflow.nextDue)+" "+(x.days<0?'<span class="pill bad">'+Math.abs(x.days)+'d overdue</span>': x.days===0?'<span class="pill warn">today</span>':'<span class="pill warn">in '+x.days+'d</span>'))+"</td><td class='right'><button class='btn small' onclick=\"bookSeasonJob('"+x.prop.id+"','backflow')\">Book test</button></td></tr>").join("") + "</table></div>"; }
+  else h += '<p class="small">Nothing due in the next 30 days.</p>';
+  h += "</div>";
+  $("view-duelists").innerHTML = h;
+}
+let jobPrefill = null;
+function bookSeasonJob(propId, type){
+  const p = propById(S, propId); if(!p) return;
+  let date = todayStr();
+  if(type==="winterization" || type==="activation"){ const w = seasonWindow(type, seasonYear); if(w && w[0] > date) date = w[0]; }
+  jobPrefill = { propId: propId, type: type, date: date, status: "scheduled" };
+  jobForm(null, propId);
+}
+
+/* ============================== forms ============================== */
+function propForm(id){
+  const p = id ? propById(S,id) : { id:"", name:"", address:"", phone:"", email:"", zones:[], controller:"", backflow:{type:"",lastTest:"",nextDue:""}, source:"", status:"active", notes:"" };
+  const c = {spray:0,rotor:0,drip:0,mixed:0}; (p.zones||[]).forEach(z=>c[z]++);
+  $("propDlgBody").innerHTML = "<h2 style='margin-top:0'>"+(id?"Edit property":"Add property")+"</h2>"
+    + '<label>Customer name *</label><input id="pf-name" value="'+esc(p.name)+'">'
+    + '<label>Address</label><input id="pf-address" value="'+esc(p.address)+'">'
+    + '<div class="row"><div><label>Phone</label><input id="pf-phone" value="'+esc(p.phone)+'"></div><div><label>Email</label><input id="pf-email" value="'+esc(p.email)+'"></div></div>'
+    + '<label>Zones by type (counts)</label><div class="zonecounts">'
+    + ZONE_TYPES.map(z=>'<div><label style="margin-top:0">'+z+'</label><input inputmode="decimal" id="pf-z-'+z+'" type="number" min="0" step="1" value="'+c[z]+'"></div>').join("") + "</div>"
+    + '<div class="row"><div><label>Controller</label><input id="pf-controller" value="'+esc(p.controller)+'" placeholder="Rain Bird ESP, Hunter Pro-C…"></div><div><label>Water source</label><input id="pf-source" value="'+esc(p.source)+'" placeholder="City water, well…"></div></div>'
+    + '<h3>Backflow preventer</h3><div class="row3"><div><label>Type</label><input id="pf-bf-type" value="'+esc(p.backflow.type)+'"></div><div><label>Last test</label><input id="pf-bf-last" type="date" value="'+esc(p.backflow.lastTest)+'"></div><div><label>Next due</label><input id="pf-bf-next" type="date" value="'+esc(p.backflow.nextDue)+'"></div></div>'
+    + '<label>Status</label><select id="pf-status"><option value="active"'+(p.status==="active"?" selected":"")+'>Active</option><option value="inactive"'+(p.status==="inactive"?" selected":"")+'>Inactive</option></select>'
+    + '<label>Notes (gate codes, dogs, shutoff locations…)</label><textarea id="pf-notes">'+esc(p.notes)+"</textarea>"
+    + '<div class="flex" style="margin-top:14px"><button class="btn" onclick="saveProp('+(id?"'"+id+"'":"null")+')">Save property</button><button class="btn ghost" onclick="$(\'propDlg\').close()">Cancel</button>'
+    + (id? '<span class="spacer"></span><button class="btn danger" onclick="deleteProp(\''+id+'\')">Delete</button>' : "") + "</div>";
+  $("propDlg").showModal();
+}
+function saveProp(id){
+  const name = $("pf-name").value.trim();
+  if(!name){ alert("Customer name is required."); return; }
+  const zones = []; ZONE_TYPES.forEach(z => { const n = Math.max(0, Math.floor(num($("pf-z-"+z).value,0))); for(let i=0;i<n && zones.length<200;i++) zones.push(z); });
+  const data = { name, address: $("pf-address").value.trim(), phone: $("pf-phone").value.trim(), email: $("pf-email").value.trim(), zones,
+    controller: $("pf-controller").value.trim(), source: $("pf-source").value.trim(),
+    backflow: { type: $("pf-bf-type").value.trim(), lastTest: $("pf-bf-last").value, nextDue: $("pf-bf-next").value },
+    status: $("pf-status").value, notes: $("pf-notes").value.trim() };
+  if(id){ Object.assign(propById(S,id), data); }
+  else { S.properties.push(Object.assign({ id: uid() }, data)); }
+  save(); $("propDlg").close(); render();
+}
+function deleteProp(id){
+  if(!confirm("Delete this property and its whole service history?")) return;
+  S.properties = S.properties.filter(p=>p.id!==id); S.jobs = S.jobs.filter(j=>j.propId!==id);
+  save(); $("propDlg").close(); switchTab("properties");
+}
+
+let jobParts = [];
+function jobForm(jobId, propId){
+  const j = jobId ? S.jobs.find(x=>x.id===jobId) : { id:"", propId: propId||(S.properties[0]&&S.properties[0].id)||"", type:"repair", date: todayStr(), status:"done", price:0, amountPaid:0, laborHrs:0, parts:[], notes:"" };
+  if(!jobId && jobPrefill){ j.propId = jobPrefill.propId; j.type = jobPrefill.type; j.date = jobPrefill.date; j.status = jobPrefill.status; j.amountPaid = 0; jobPrefill = null; }
+  jobParts = (j.parts||[]).map(p=>({desc:p.desc,cost:p.cost}));
+  const propOpts = S.properties.map(p=>'<option value="'+p.id+'"'+(p.id===j.propId?" selected":"")+">"+esc(p.name)+" ("+zoneCount(p)+" zones)</option>").join("");
+  $("jobDlgBody").innerHTML = "<h2 style='margin-top:0'>"+(jobId?"Edit service":"Log service")+"</h2>"
+    + '<label>Property</label><select id="jf-prop" onchange="jobPriceHint()">'+propOpts+"</select>"
+    + '<div class="row"><div><label>Service type</label><select id="jf-type" onchange="jobPriceHint()">'+Object.keys(JOB_TYPES).map(k=>'<option value="'+k+'"'+(j.type===k?" selected":"")+">"+JOB_TYPES[k]+"</option>").join("")+'</select></div>'
+    + '<div><label>Date</label><input id="jf-date" type="date" value="'+esc(j.date)+'"></div></div>'
+    + '<div id="jf-repair" class="'+(j.type==="repair"?"":"hidden")+'"><label>Labor hours</label><input inputmode="decimal" id="jf-labor" type="number" min="0" step="0.25" value="'+(j.laborHrs||0)+'" oninput="jobPriceHint()">'
+    + '<label>Parts</label><div id="jf-parts"></div><button class="btn small ghost" onclick="addPartRow()">+ Add part</button></div>'
+    + '<div class="row"><div><label>Price ($) <span class="muted" id="jf-hint"></span></label><input inputmode="decimal" id="jf-price" type="number" min="0" step="0.01" value="'+(j.price||0)+'"></div>'
+    + '<div><label>Amount paid ($)</label><input inputmode="decimal" id="jf-paid" type="number" min="0" step="0.01" value="'+(j.amountPaid||0)+'"></div></div>'
+    + '<label>Status</label><select id="jf-status"><option value="done"'+(j.status==="done"?" selected":"")+'>Done</option><option value="scheduled"'+(j.status==="scheduled"?" selected":"")+">Scheduled</option></select>"
+    + '<label>Notes (what was found / fixed — this becomes the property history)</label><textarea id="jf-notes">'+esc(j.notes)+"</textarea>"
+    + '<div class="flex" style="margin-top:14px"><button class="btn" onclick="saveJob('+(jobId?"'"+jobId+"'":"null")+')">Save</button><button class="btn ghost" onclick="$(\'jobDlg\').close()">Cancel</button>'
+    + (jobId? '<span class="spacer"></span><button class="btn danger" onclick="deleteJob(\''+jobId+'\')">Delete</button>' : "") + "</div>";
+  renderPartRows(); jobPriceHint();
+  $("jobDlg").showModal();
+}
+function renderPartRows(){
+  $("jf-parts").innerHTML = jobParts.map((p,i)=>'<div class="partrow"><input placeholder="Part description" value="'+esc(p.desc)+'" oninput="jobParts['+i+'].desc=this.value"><input inputmode="decimal" type="number" min="0" step="0.01" placeholder="$" value="'+p.cost+'" oninput="jobParts['+i+'].cost=this.value;jobPriceHint()"><button class="btn small danger" onclick="jobParts.splice('+i+',1);renderPartRows();jobPriceHint()">✕</button></div>').join("") || '<p class="small muted">No parts.</p>';
+}
+function addPartRow(){ jobParts.push({desc:"",cost:0}); renderPartRows(); }
+function jobPriceHint(){
+  const type = $("jf-type").value, p = propById(S, $("jf-prop").value);
+  $("jf-repair").classList.toggle("hidden", type!=="repair");
+  if(!p) return;
+  const probe = { type, laborHrs: num(($("jf-labor")||{}).value,0), parts: jobParts, price: num(($("jf-price")||{}).value,0) };
+  const auto = jobPrice(S.settings, probe, p);
+  $("jf-hint").textContent = "— rate card says " + money(auto);
+  if(type!=="install") $("jf-price").value = auto;
+}
+function saveJob(id){
+  const propId = $("jf-prop").value, type = $("jf-type").value, date = $("jf-date").value;
+  if(!propById(S,propId)){ alert("Pick a property first."); return; }
+  if(!validDateStr(date)){ alert("Enter a valid date."); return; }
+  const price = clampNonNeg($("jf-price").value);
+  const data = { propId, type, date, status: $("jf-status").value, price,
+    amountPaid: Math.min(clampNonNeg($("jf-paid").value), price),
+    laborHrs: type==="repair" ? clampNonNeg($("jf-labor").value) : 0,
+    parts: type==="repair" ? jobParts.filter(x=>x.desc||num(x.cost,0)>0).map(x=>({desc:String(x.desc).slice(0,120), cost: clampNonNeg(x.cost)})) : [],
+    notes: $("jf-notes").value.trim() };
+  if(id){ Object.assign(S.jobs.find(x=>x.id===id), data); }
+  else { S.jobs.push(Object.assign({ id: uid() }, data)); }
+  save(); $("jobDlg").close(); render();
+}
+function deleteJob(id){
+  if(!confirm("Delete this service record?")) return;
+  S.jobs = S.jobs.filter(j=>j.id!==id); save(); $("jobDlg").close(); render();
+}
+
+/* ============================== settings ============================== */
+function renderSettings(){
+  const s = S.settings;
+  const tierRows = (arr, pre) => arr.map((t,i)=>'<div class="partrow"><input inputmode="decimal" type="number" min="0" value="'+(t.max===9999?"":t.max)+'" placeholder="Any more" id="'+pre+'-max-'+i+'"><input inputmode="decimal" type="number" min="0" step="0.01" value="'+t.price+'" id="'+pre+'-price-'+i+'"><button class="btn small danger" type="button" onclick="deleteTier(\''+pre+'\','+i+')">Delete</button></div>').join("");
+  $("view-settings").innerHTML = '<div class="card"><h2>Settings</h2>'
+    + '<label>Business name</label><input id="sf-biz" value="'+esc(s.bizName)+'">'
+    + '<div class="row3"><div><label>Labor rate ($/hr, repairs)</label><input inputmode="decimal" id="sf-labor" type="number" min="0" step="0.01" value="'+s.laborRate+'"></div>'
+    + '<div><label>Backflow test (flat $)</label><input inputmode="decimal" id="sf-bf" type="number" min="0" step="0.01" value="'+s.backflowPrice+'"></div>'
+    + '<div><label>Mid-season check (flat $)</label><input inputmode="decimal" id="sf-mid" type="number" min="0" step="0.01" value="'+s.midseasonPrice+'"></div></div>'
+    + '<h3>Spring activation price by zone count</h3><p class="small muted">Defaults follow published trade price lists (e.g. $153 for 1–12 zones, up to $383 for 31+). "Up to zones" blank = any larger system.</p>' + tierRows(s.actTiers,"act")
+    + '<button class="btn small ghost" onclick="addTier(\'act\')">+ Add tier</button>'
+    + '<h3>Fall winterization price by zone count</h3><p class="small muted">Published lists scale blowouts by zones (e.g. 1–8 zones $105, 9–12 $125, up to ~$165 for big systems).</p>' + tierRows(s.winTiers,"win")
+    + '<button class="btn small ghost" onclick="addTier(\'win\')">+ Add tier</button>'
+    + '<label>Terms printed on service sheets</label><textarea id="sf-terms">'+esc(s.terms)+"</textarea>"
+    + '<div class="flex" style="margin-top:14px"><button class="btn" onclick="saveSettings()">Save settings</button></div></div>'
+    + '<div class="card"><h2>Your data</h2><p class="small muted">Everything lives in this browser on this device. Export a backup before switching devices.</p>'
+    + '<div class="flex"><button class="btn ghost" onclick="exportData()">⬇ Export backup (JSON)</button>'
+    + '<label class="btn ghost" style="margin:0">⬆ Import backup<input type="file" accept=".json,application/json" class="hidden" onchange="importData(this)"></label>'
+    + '<button class="btn ghost" onclick="reloadDemo()">Reload demo data</button>'
+    + '<button class="btn ghost" onclick="clearDemoOnly()">Clear sample data only</button>'
+    + '<button class="btn danger" onclick="clearAll()">Clear everything</button></div></div>';
+}
+let tierDraft = null;
+function readTiers(pre, fallback){
+  const out = []; let i = 0;
+  while($(pre+"-max-"+i)){ const maxv = $(pre+"-max-"+i).value.trim(); out.push({ max: maxv===""?9999:Math.max(0,Math.floor(num(maxv,9999))), price: clampNonNeg($(pre+"-price-"+i).value) }); i++; }
+  const good = out.filter(t=>t.price>0);
+  return good.length ? good : fallback;
+}
+function readTierRowsRaw(pre){
+  const out = []; let i = 0;
+  while($(pre+"-max-"+i)){ const maxv = $(pre+"-max-"+i).value.trim(); out.push({ max: maxv===""?9999:Math.max(0,Math.floor(num(maxv,9999))), price: clampNonNeg($(pre+"-price-"+i).value) }); i++; }
+  return out.length ? out : (pre==="act"?S.settings.actTiers:S.settings.winTiers).slice();
+}
+function addTier(pre){ const cur = readTierRowsRaw(pre); cur.push({max:9999,price:0}); if(pre==="act") S.settings.actTiers = cur; else S.settings.winTiers = cur; save(); renderSettings(); }
+function deleteTier(pre, idx){ const cur = readTierRowsRaw(pre); if(idx<0 || idx>=cur.length) return; cur.splice(idx,1); if(pre==="act") S.settings.actTiers = cur; else S.settings.winTiers = cur; save(); renderSettings(); }
+function clearDemoOnly(){
+  if(!hasDemoData(S)) return;
+  if(!confirm("Clear sample data only? Demo properties and jobs will be removed — your own entries stay.")) return;
+  const demoPropIds = new Set(S.properties.filter(p=>p.demo).map(p=>p.id));
+  S.properties = S.properties.filter(p=>!p.demo);
+  S.jobs = S.jobs.filter(j=>!j.demo && !demoPropIds.has(j.propId));
+  if(S.settings.bizName === "GreenLine Irrigation") S.settings.bizName = defaultSettings().bizName;
+  save(); render();
+}
+function saveSettings(){
+  S.settings.bizName = $("sf-biz").value.trim() || S.settings.bizName;
+  S.settings.laborRate = clampNonNeg($("sf-labor").value);
+  S.settings.backflowPrice = clampNonNeg($("sf-bf").value);
+  S.settings.midseasonPrice = clampNonNeg($("sf-mid").value);
+  S.settings.actTiers = readTiers("act", S.settings.actTiers);
+  S.settings.winTiers = readTiers("win", S.settings.winTiers);
+  S.settings.terms = $("sf-terms").value;
+  save(); render(); alert("Settings saved.");
+}
+function exportData(){
+  const blob = new Blob([JSON.stringify(S,null,2)], {type:"application/json"});
+  const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = "sprinklerbook-backup-" + todayStr() + ".json"; a.click();
+  setTimeout(()=>URL.revokeObjectURL(a.href), 2000);
+}
+function importData(input){
+  const f = input.files && input.files[0]; if(!f) return;
+  const r = new FileReader();
+  r.onload = () => { try{ const st = sanitizeState(JSON.parse(r.result)); if(!st) throw new Error("bad"); S = st; save(); render(); alert("Backup imported."); }catch(e){ alert("That file could not be imported — nothing was changed."); } };
+  r.readAsText(f);
+}
+function reloadDemo(){ if(!confirm("Replace everything with the demo data?")) return; S = seedState(); save(); switchTab("dashboard"); }
+function clearAll(){ if(!confirm("Delete ALL properties, jobs, and settings from this device?")) return; S = { settings: defaultSettings(), properties: [], jobs: [] }; save(); switchTab("dashboard"); }
+
+/* ============================== print ============================== */
+function bizHead(){ return "<h1>"+esc(S.settings.bizName)+"</h1><div>SprinklerBook — Irrigation Service Season Book</div>"; }
+function printRouteList(type){
+  const list = dueList(S, type, seasonYear);
+  let h = bizHead() + "<h2>"+(type==="winterization"?"🍂 Fall blowout route list":"🌱 Spring activation route list")+" — "+seasonYear+" ("+list.length+" stops)</h2>"
+    + "<table><tr><th>☐</th><th>Property</th><th>Address</th><th>Phone</th><th>System</th><th>Price</th><th>Notes</th></tr>"
+    + list.map(p=>"<tr><td>☐</td><td>"+esc(p.name)+"</td><td>"+esc(p.address)+"</td><td>"+esc(p.phone)+"</td><td>"+esc(zoneSummary(p))+"<br>"+esc(p.controller||"")+"</td><td>"+money(jobPrice(S.settings,{type},p))+"</td><td>"+esc(p.notes)+"</td></tr>").join("") + "</table>"
+    + "<p>Total if every stop books: <b>"+money(list.reduce((s,p)=>s+jobPrice(S.settings,{type},p),0))+"</b></p>";
+  $("printArea").innerHTML = h; window.print();
+}
+function printProperty(id){
+  const p = propById(S,id); if(!p) return; const hist = propHistory(S,id);
+  let h = bizHead() + "<h2>Property service record — "+esc(p.name)+"</h2>"
+    + "<p>"+esc(p.address)+(p.phone?" · "+esc(p.phone):"")+"<br>"+esc(zoneSummary(p))+"<br>Controller: "+esc(p.controller||"—")+" · Water: "+esc(p.source||"—")
+    + "<br>Backflow: "+esc(p.backflow.type||"—")+" · last test "+fmtDate(p.backflow.lastTest)+" · next due "+fmtDate(p.backflow.nextDue)+"</p>"
+    + (p.notes? "<p>Notes: "+esc(p.notes)+"</p>" : "")
+    + "<h2>Service history</h2><table><tr><th>Date</th><th>Service</th><th>Notes</th><th>Price</th></tr>"
+    + hist.map(j=>"<tr><td>"+fmtDate(j.date)+"</td><td>"+esc(JOB_TYPES[j.type])+"</td><td>"+esc(j.notes)+"</td><td>"+money(j.price)+"</td></tr>").join("") + "</table>";
+  $("printArea").innerHTML = h; window.print();
+}
+function printJobSheet(id){
+  const j = S.jobs.find(x=>x.id===id); if(!j) return; const p = propById(S, j.propId);
+  let h = bizHead() + "<h2>Service sheet — "+esc(JOB_TYPES[j.type])+"</h2>"
+    + "<p><b>"+esc(p?p.name:"")+"</b><br>"+esc(p?p.address:"")+"<br>Date: "+fmtDate(j.date)+"</p>"
+    + "<table><tr><th>Item</th><th>Amount</th></tr>"
+    + (j.type==="repair" ? "<tr><td>Labor — "+j.laborHrs+" hrs @ "+money(S.settings.laborRate)+"/hr</td><td>"+money(j.laborHrs*S.settings.laborRate)+"</td></tr>" + (j.parts||[]).map(pt=>"<tr><td>"+esc(pt.desc)+"</td><td>"+money(pt.cost)+"</td></tr>").join("") : "<tr><td>"+esc(JOB_TYPES[j.type])+(p?" — "+zoneCount(p)+" zones":"")+"</td><td>"+money(j.price)+"</td></tr>")
+    + "<tr><td><b>Total</b></td><td><b>"+money(j.price)+"</b></td></tr><tr><td>Paid</td><td>"+money(j.amountPaid)+"</td></tr><tr><td><b>Balance due</b></td><td><b>"+money(jobBalance(j))+"</b></td></tr></table>"
+    + (j.notes? "<p>Work performed: "+esc(j.notes)+"</p>" : "") + "<p>"+esc(S.settings.terms)+"</p>"
+    + '<div class="sig">Customer signature</div>';
+  $("printArea").innerHTML = h; window.print();
+}
+
+/* ============================== help ============================== */
+function renderHelp(){
+  $("view-help").innerHTML = '<div class="card"><h2>How SprinklerBook works</h2>'
+    + '<p><b>The season is the business.</b> An irrigation company makes its year in two rushes: spring activations and fall blowouts. SprinklerBook keeps a record for every property — zones by type, controller, backflow preventer, and every repair ever done there — and turns those records into the two lists that matter: <b>who hasn\'t booked their blowout</b> (before first freeze) and <b>who hasn\'t booked their activation</b>.</p>'
+    + '<h3>Price cards</h3><p class="small">Seasonal services price by zone count, the way the trade actually charges. The defaults follow published price lists — activations $153 for 1–12 zones up to $383 for 31+ zones; winterizations $105 for 1–8 zones up to $165 for the biggest systems. Edit every tier in <b>Settings</b> to match your market. Repairs price as labor hours × your labor rate, plus parts.</p>'
+    + '<h3>Seasons</h3><p class="small">Activation season: Feb 15 – Jun 30. Winterization season: Aug 15 – Dec 31. A property is "booked" for a season when any job of that type is on its record inside that window — scheduled counts. Inactive properties never appear on due lists.</p>'
+    + '<h3>Backflow</h3><p class="small">Every property\'s preventer has a next-test-due date. The Season Lists tab shows everything due in the next 30 days plus anything overdue, with one-tap booking. After a test, log it as a Backflow Test job and update the property\'s next-due date (usually +1 year).</p>'
+    + '<h3>Day to day</h3><p class="small">Log every visit from the property page or the Service Log — repairs especially, because the next tech (or you, next year) will want to know what was already fixed on zone 7. Print route lists for the crew, property records for the file, and service sheets with a signature line for the customer.</p>'
+    + '<h3>Your data</h3><p class="small">Everything is stored in this browser on this device only — no account, no internet needed, nothing uploaded anywhere. Export a JSON backup from Settings before switching devices, and import it on the new one.</p></div>';
+}
+
+/* ============================== init ============================== */
+document.querySelectorAll("#tabs button").forEach(b => b.addEventListener("click", () => switchTab(b.dataset.tab)));
+load();
+render();
+</script>
+
+<style id="wwLegalCss">
+#wwLegalOverlay{position:fixed;inset:0;z-index:99990;background:rgba(10,12,16,.72);display:flex;align-items:flex-start;justify-content:center;overflow-y:auto;padding:18px 12px;box-sizing:border-box}
+#wwLegalOverlay[hidden]{display:none}
+.ww-card{background:#fff;color:#16181d;max-width:560px;width:100%;border-radius:14px;padding:22px 20px;box-sizing:border-box;box-shadow:0 12px 40px rgba(0,0,0,.4)}
+.ww-appname{font-size:13px;letter-spacing:.08em;text-transform:uppercase;color:#5b6472;font-weight:700}
+.ww-card h2{margin:6px 0 10px;font-size:24px}
+.ww-sum{font-size:17px;line-height:1.45;font-weight:600;margin:10px 0}
+.ww-follow{color:#444c58;font-size:14px;line-height:1.45}
+.ww-updated{background:#fff4d6;border:1px solid #e3c566;color:#5c4a00;border-radius:8px;padding:8px 10px;font-size:14px}
+.ww-btn{display:block;width:100%;min-height:48px;margin:10px 0 0;padding:12px 14px;font-size:16px;border-radius:10px;border:1px solid #9aa3af;background:#f2f4f7;color:#16181d;cursor:pointer;box-sizing:border-box}
+.ww-btn.ww-primary{background:#14532d;border-color:#14532d;color:#fff;font-weight:700;min-height:52px}
+.ww-btn.ww-primary:disabled{opacity:.45;cursor:not-allowed}
+.ww-check{display:flex;gap:10px;align-items:flex-start;margin:14px 0 2px;font-size:15px;line-height:1.4;color:#16181d;cursor:pointer}
+.ww-check input{width:22px;height:22px;flex:0 0 auto;margin:1px 0 0;accent-color:#14532d;cursor:pointer}
+#wwLegalPanel{position:fixed;inset:0;z-index:99995;background:#fff;color:#16181d;overflow-y:auto;box-sizing:border-box}
+#wwLegalPanel[hidden]{display:none}
+.ww-panel-inner{max-width:720px;margin:0 auto;padding:16px 18px 40px;box-sizing:border-box;line-height:1.55}
+.ww-panel-inner h3{margin-top:26px}
+.ww-panel-inner h4{margin-top:20px}
+.ww-accept{background:#eef7ee;border:1px solid #b9d8b9;border-radius:8px;padding:10px 12px}
+.ww-seller{margin-top:28px;padding-top:12px;border-top:1px solid #ddd;color:#444c58}
+#wwLegalClose{min-height:48px;padding:10px 16px;font-size:16px;border-radius:10px;border:1px solid #9aa3af;background:#f2f4f7;color:#16181d;cursor:pointer}
+[data-ww-legal-card]{border:1px solid #9aa3af;border-radius:12px;padding:14px;margin:14px 0;background:rgba(127,127,127,.06)}
+[data-ww-legal-btn]{min-height:48px;padding:10px 16px;font-size:16px;border-radius:10px;border:1px solid #14532d;background:#14532d;color:#fff;font-weight:700;cursor:pointer;width:100%}
+@media print{#wwLegalOverlay,#wwLegalPanel,[data-ww-legal-card]{display:none!important}}
+</style>
+
+<!-- ===== White Wolf Legal Pattern v1.0 ===== -->
+<div id="wwLegalOverlay" hidden>
+  <div class="ww-card" role="dialog" aria-modal="true" aria-labelledby="wwLegalTitle">
+    <div class="ww-appname">SprinklerBook</div>
+    <h2 id="wwLegalTitle">Terms of Use</h2>
+    <p class="ww-updated" id="wwUpdatedNote" hidden>Our terms were updated (v1.0).</p>
+    <p class="ww-sum">Your data stays on your device.<br>Estimates are aids, not guarantees.<br>You&#39;re responsible for checking outputs before you rely on them.</p>
+    <p class="ww-follow">The full Terms and Disclaimer are one tap away, now and any time in Settings &#8594; Legal.</p>
+    <button type="button" class="ww-btn" id="wwReadTerms">Read the full Terms</button>
+    <button type="button" class="ww-btn" id="wwReadDisc">Read the Estimator Disclaimer</button>
+    <label class="ww-check"><input type="checkbox" id="wwAgreeCheck"> <span>I have read the disclaimer and I agree to the Terms of Use</span></label>
+    <button type="button" class="ww-btn ww-primary" id="wwAgree" disabled>I Agree</button>
+  </div>
+</div>
+<div id="wwLegalPanel" hidden>
+  <div class="ww-panel-inner">
+    <button type="button" id="wwLegalClose">&#8592; Back</button>
+    <h2>Legal</h2>
+    <p class="ww-accept" id="wwAcceptLine">You have not recorded acceptance of the Terms yet.</p>
+    <h3>Terms of Use</h3>
+    <p><strong>Version 1.0 (DRAFT — pending attorney review)</strong> <strong>Seller: White Wolf Tree Service LLC, selling digital products under the name "White Wolf Digital"</strong> <strong>Contact: whitewolfoklahoma@gmail.com</strong></p>
+<hr>
+<h4>1. What you're buying</h4>
+<p>Our apps (including ForgeFit AI, ForgeKitchen, TreeBid Pro, SnowBid, WashPrice Pro, RoofSquares, JobProfit Tracker, PastureLedger, and the other titles sold under White Wolf Digital) are single-file software tools. When you buy one, you are buying a <strong>license to use the file</strong>, not ownership of the software itself.</p>
+<h4>2. Your license</h4>
+<ul>
+<li>You may use the app for your own personal or business work.</li>
+<li>You may open it on your own devices (phone, tablet, computer) and move your</li>
+</ul>
+<p>own data between them using the app's built-in backup/export tools.</p>
+<ul>
+<li>You may <strong>not</strong> resell, redistribute, give away, upload, or share the app</li>
+</ul>
+<p>file (or a copy of it) with anyone else — including posting it online, bundling it with other products, or selling access to it.</p>
+<ul>
+<li>You may <strong>not</strong> claim the app as your own work, remove its branding or</li>
+</ul>
+<p>notices, or use it to build a competing product for resale.</p>
+<ul>
+<li>One purchase = one buyer. A business purchase covers the buyer and their</li>
+</ul>
+<p>own employees using it for that business's work; it does not cover other businesses.</p>
+<h4>3. Your data stays yours — and stays on your device</h4>
+<ul>
+<li>The current versions of our apps run <strong>entirely on your device</strong>. They have</li>
+</ul>
+<p>no accounts, no sign-in, no analytics, and they collect, transmit, and store <strong>none</strong> of your information on any server. We never see your data.</p>
+<ul>
+<li>Your records are stored in your browser/app storage on your device. **You</li>
+</ul>
+<p>are responsible for backing them up** using the app's export tools. If you clear your browser data, lose your device, or uninstall the app, your records may be permanently lost, and we cannot recover them — we never had a copy.</p>
+<ul>
+<li>Files you export (backups, quotes, PDFs) are under your control. Where you</li>
+</ul>
+<p>store or send them is up to you.</p>
+<h4>4. Estimates are tools, not guarantees</h4>
+<p>Every number our apps produce — bids, prices, costs, calorie targets, projections, schedules, totals — is an <strong>estimate generated from the information you enter and the settings you choose</strong>. Outputs are aids for your own judgment, not guarantees of price, profit, outcome, or result. You are responsible for checking any output before relying on it (see also the disclaimer that applies to your app: Health Disclaimer for fitness/nutrition apps, Estimator Disclaimer for contractor tools). If an input is wrong, the output will be wrong.</p>
+<h4>5. Acceptable use</h4>
+<p>Don't use the apps to break the law, infringe anyone's rights, or misrepresent quotes, invoices, or records to your own customers. For the fitness apps, the guardrails in the app (healthy-rate limits, calorie floor) are part of the product — don't treat the app as a way around them.</p>
+<h4>6. Provided "as is"</h4>
+<p>The apps are provided <strong>"as is" and "as available," without warranties of any kind</strong>, express or implied — including merchantability, fitness for a particular purpose, accuracy of calculations, and uninterrupted or error-free operation — to the maximum extent allowed by law. Software has bugs; browsers change; we work to fix problems but do not promise any app is error-free or will work on every device or browser forever.</p>
+<h4>7. Limitation of liability</h4>
+<p>To the maximum extent allowed by law:</p>
+<ul>
+<li>We are **not liable for indirect, incidental, special, or consequential</li>
+</ul>
+<p>damages** — including lost profits, lost or mispriced jobs, lost data, or business interruption — arising from use of the apps.</p>
+<ul>
+<li>Our total liability for any claim connected to an app is limited to the</li>
+</ul>
+<p><strong>amount you paid for that app</strong>.</p>
+<ul>
+<li>Nothing in these terms limits liability that cannot legally be limited.</li>
+</ul>
+<h4>8. Refunds</h4>
+<p>Refunds are handled <strong>by the storefront you bought from, under that storefront's policy</strong> — Gumroad's refund policy for Gumroad purchases, and Google Play's refund policy for Play purchases. These terms do not add to, replace, or override the storefront's refund rules. If a file is defective and won't open, contact us at whitewolfoklahoma@gmail.com and we'll fix or replace the file.</p>
+<h4>9. Updates and changes to these terms</h4>
+<ul>
+<li>We may release updated versions of an app. Updates may add, change, or</li>
+</ul>
+<p>remove features.</p>
+<ul>
+<li>We may update these terms. The version you agreed to is recorded in the</li>
+</ul>
+<p>app (version number and date) at first-run acceptance. If terms change, the app may ask you to accept the new version once on next open. Updated terms apply going forward, not retroactively.</p>
+<ul>
+<li>If you don't agree to an updated version of the terms, stop using the app.</li>
+</ul>
+<h4>10. Governing law</h4>
+<p>These terms are governed by the laws of the <strong>State of Oklahoma</strong>, USA. (Attorney to confirm governing law and venue before publication.)</p>
+<h4>11. Contact</h4>
+<p>White Wolf Tree Service LLC (White Wolf Digital) — whitewolfoklahoma@gmail.com.</p>
+<hr>
+<h4>CONNECTED FEATURES — takes effect only when these features ship</h4>
+<p><em>The sections below apply only to future connected features (device sync via Health Connect, AI voice logging, and the AI Goal Preview in ForgeFit). They do not apply to the current offline versions, which never transmit data.</em></p>
+<ul>
+<li><strong>Opt-in only.</strong> Connected features are off by default. Each one asks for</li>
+</ul>
+<p>your separate, explicit consent — on its own consent screen, in plain language — before anything leaves your device. Declining never disables the app's offline features.</p>
+<ul>
+<li><strong>What gets sent.</strong> Only what the consent screen names, only when you use</li>
+</ul>
+<p>the feature: for example, a meal description (text, or audio only if cloud transcription is on) for AI voice logging, or the single photo you choose for an AI Goal Preview.</p>
+<ul>
+<li><strong>No retention by us.</strong> Our relay service passes your request to the named</li>
+</ul>
+<p>AI provider and keeps nothing — no copies of your photos, audio, transcripts, or entries are stored on our servers. Provider handling is described on the consent screen and in the Privacy Policy.</p>
+<ul>
+<li><strong>Health data stays on the device.</strong> Device sync (Health Connect) reads</li>
+</ul>
+<p>your health data on your phone and stores it in the app on your phone. It is not uploaded to us.</p>
+<ul>
+<li><strong>Allowances.</strong> Some connected features run on third-party AI services we</li>
+</ul>
+<p>pay for per use, so they may include a monthly allowance described in the app (for example, a set number of AI previews or voice entries per month), with optional additional credits. Allowances and pricing will be shown in the app before you use the feature; they are not a subscription unless the app says so in plain words.</p>
+<ul>
+<li><strong>Permissions.</strong> Connected features may request device permissions (such</li>
+</ul>
+<p>as Health Connect access or the microphone) at the moment you first use them. You can revoke permissions any time in your device settings; the related feature will simply stop working.</p>
+    <h3>Estimator Disclaimer</h3>
+<p><strong>Applies to: TreeBid Pro, SnowBid, WashPrice Pro, RoofSquares, JobProfit Tracker, FieldForms Toolkit, PaintPro, FenceDeck, MarketMaker, and the other estimating/pricing tools sold under White Wolf Digital — including bundles that contain them.</strong></p>
+<h4>Estimating aids, not finished quotes</h4>
+<ul>
+<li>These apps are <strong>estimating and record-keeping aids</strong>. Every bid, price,</li>
+</ul>
+<p>cost, measurement, and total they produce is an <strong>estimate based on the information and rates you enter</strong>.</p>
+<ul>
+<li>**You — the business owner — are responsible for verifying everything</li>
+</ul>
+<p>before you quote a customer:** measurements and quantities, site conditions, your current material and labor costs, your rates and margins, taxes, permit and license requirements, disposal rules, and any contract terms.</p>
+<ul>
+<li>Default rates, presets, and sample data included in the apps are starting</li>
+</ul>
+<p>points only. They are not market prices, not industry standards, and not a recommendation of what you should charge.</p>
+<ul>
+<li>A saved quote keeps the prices in effect when you created it (price</li>
+</ul>
+<p>snapshot). Changing your presets later does not change saved quotes — and a saved quote is still your responsibility to review before sending.</p>
+<h4>Specific tools</h4>
+<ul>
+<li><strong>TreeBid Pro:</strong> tree work is dangerous and site-specific. Difficulty</li>
+</ul>
+<p>factors and presets cannot see the actual tree, lean, rot, targets, or access. Inspect every job in person before final pricing. The "Invoice with Wave" feature is an open-and-paste handoff — TreeBid does not connect to Wave, and the invoice you send from Wave is yours.</p>
+<ul>
+<li><strong>RoofSquares / measurement tools:</strong> confirm roof measurements and pitch</li>
+</ul>
+<p>in person or by your usual method before ordering materials.</p>
+<ul>
+<li><strong>SnowBid / seasonal tools:</strong> route times, snowfall amounts, and service</li>
+</ul>
+<p>pricing vary by storm and site; seasonal contracts are your agreement with your customer, on your terms.</p>
+<ul>
+<li><strong>JobProfit Tracker:</strong> profit figures depend on the costs you enter.</li>
+</ul>
+<p>The app is not accounting or tax software and does not replace your bookkeeper or accountant.</p>
+<h4>Bottom line</h4>
+<p>If an output and your judgment disagree, trust your judgment — then fix the input. We are not responsible for jobs won, lost, or mispriced based on app outputs, within the limits of the Terms of Use.</p>
+    <h3>Privacy</h3>
+    <p>This app has no accounts and collects no data. Everything you enter is stored only on your device, in your browser/app storage, and is never uploaded, transmitted, or shared. We never see your data. Files you export (backups, quotes, PDFs) are under your control &mdash; store and send them only where you choose. If you clear your browser data, lose your device, or uninstall the app, your records may be permanently lost, so export backups regularly.</p>
+    <p class="ww-seller">Sold by White Wolf Tree Service LLC (White Wolf Digital) &mdash; whitewolfoklahoma@gmail.com</p>
+  </div>
+</div>
+
+<script>
+/* ===== White Wolf Legal Pattern v1.0 ===== */
+(function(){
+"use strict";
+var TERMS_VERSION = "1.0";
+var WW_KEY = "sprinklerbook_v1";
+var WW_HAS_DISC = true;
+var WWREC = null;
+function wwValid(r){ return r && typeof r === "object" && typeof r.termsVersion === "string" && !!r.termsVersion; }
+function wwVerCmp(a,b){ var pa=String(a).split("."), pb=String(b).split("."); for(var i=0;i<3;i++){ var x=parseInt(pa[i]||"0",10)||0, y=parseInt(pb[i]||"0",10)||0; if(x<y) return -1; if(x>y) return 1; } return 0; }
+function wwReadStored(){ try{ var raw = localStorage.getItem(WW_KEY); if(!raw) return null; var o = JSON.parse(raw); return (o && typeof o === "object") ? o : null; }catch(e){ return null; } }
+var _wwStored = wwReadStored();
+if(_wwStored && wwValid(_wwStored.legal)) WWREC = _wwStored.legal;
+try{
+  var _wwOrigSet = localStorage.setItem.bind(localStorage);
+  localStorage.setItem = function(k,v){
+    if(k === WW_KEY && typeof v === "string"){
+      try{ var o = JSON.parse(v); if(o && typeof o === "object" && !Array.isArray(o)){
+        if(wwValid(o.legal)){ WWREC = o.legal; }
+        else if(WWREC){ o.legal = WWREC; v = JSON.stringify(o); }
+      } }catch(e){}
+    }
+    return _wwOrigSet(k,v);
+  };
+}catch(e){}
+function wwSyncState(){ try{ if(typeof S !== "undefined" && S && typeof S === "object" && WWREC) S.legal = WWREC; }catch(e){} }
+function wwPersist(){
+  wwSyncState();
+  try{ save() }catch(e){}
+  try{ var o = wwReadStored(); if(o){ o.legal = WWREC; localStorage.setItem(WW_KEY, JSON.stringify(o)); } }catch(e){}
+}
+function wwAcceptLine(){
+  var el = document.getElementById("wwAcceptLine"); if(!el) return;
+  if(WWREC && WWREC.acceptedDate){ el.textContent = "You agreed to Terms v" + WWREC.termsVersion + " on " + WWREC.acceptedDate + "."; }
+  else { el.textContent = "You have not recorded acceptance of the Terms yet."; }
+}
+function wwOpenLegal(){ var p = document.getElementById("wwLegalPanel"); if(p){ p.hidden = false; p.scrollTop = 0; } wwAcceptLine(); }
+function wwCloseLegal(){ var p = document.getElementById("wwLegalPanel"); if(p) p.hidden = true; }
+function wwInit(){
+  var overlay = document.getElementById("wwLegalOverlay");
+  var agree = document.getElementById("wwAgree");
+  var rt = document.getElementById("wwReadTerms");
+  var rd = document.getElementById("wwReadDisc");
+  var close = document.getElementById("wwLegalClose");
+  if(rt) rt.addEventListener("click", wwOpenLegal);
+  if(rd) rd.addEventListener("click", wwOpenLegal);
+  if(close) close.addEventListener("click", wwCloseLegal);
+  var agreeCheck = document.getElementById("wwAgreeCheck");
+  if(agree) agree.disabled = !(agreeCheck && agreeCheck.checked);
+  if(agreeCheck && agree) agreeCheck.addEventListener("change", function(){ agree.disabled = !agreeCheck.checked; });
+  if(agree) agree.addEventListener("click", function(){
+    if(agree.disabled || !(agreeCheck && agreeCheck.checked)) return;
+    WWREC = { termsVersion: TERMS_VERSION, acceptedDate: new Date().toISOString().slice(0,10), disclaimerShown: WW_HAS_DISC };
+    wwPersist(); wwAcceptLine();
+    if(overlay) overlay.hidden = true;
+  });
+  wwSyncState(); wwAcceptLine();
+  if(!WWREC || wwVerCmp(WWREC.termsVersion, TERMS_VERSION) < 0){
+    if(WWREC){ var note = document.getElementById("wwUpdatedNote"); if(note) note.hidden = false; }
+    if(overlay) overlay.hidden = false;
+  }
+  var anchors = [{sel:"#view-settings",marker:null},{sel:"#view-help",marker:null}];
+  function wwEnsureBtn(){
+    for(var i=0;i<anchors.length;i++){
+      var a = anchors[i]; var el = document.querySelector(a.sel); if(!el) continue;
+      if(el.querySelector("[data-ww-legal-btn]")) continue;
+      var txt = el.textContent || "";
+      if(a.marker){ if(txt.toLowerCase().indexOf(a.marker.toLowerCase()) < 0) continue; }
+      else if(txt.replace(/\s+/g,"").length < 40) continue;
+      var card = document.createElement("div");
+      card.setAttribute("data-ww-legal-card","");
+      card.innerHTML = "<h3 style=\"margin:0 0 6px\">Legal</h3><p style=\"margin:0 0 10px\">Terms of Use, disclaimer and privacy for this app.</p>";
+      var b = document.createElement("button");
+      b.type = "button"; b.setAttribute("data-ww-legal-btn",""); b.textContent = "View Legal \u2014 Terms, Disclaimer & Privacy";
+      b.addEventListener("click", wwOpenLegal);
+      card.appendChild(b); el.appendChild(card);
+    }
+  }
+  wwEnsureBtn();
+  setInterval(wwEnsureBtn, 700);
+}
+if(document.readyState === "loading") document.addEventListener("DOMContentLoaded", wwInit); else wwInit();
+})();
+</script>
+</body>
+</html>
